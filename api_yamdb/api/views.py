@@ -1,7 +1,7 @@
 import logging
-import re
 
 from django.shortcuts import get_object_or_404
+from rest_framework.pagination import LimitOffsetPagination
 # from django_filters import rest_framework as djfilters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -9,11 +9,12 @@ from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
-from reviews.models import Category, Genre, Title
+from reviews.models import Category, Genre, Title, Review, Comment
 
-from .permissions import IsAdminOrReadOnly
+from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (CategorySerializer, GenreSerializer,
-                          TitleGetSerializer, TitlePostSerializer)
+                          TitleGetSerializer, TitlePostSerializer,
+                          ReviewSerializer, CommentSerializer)
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -92,3 +93,29 @@ class TitleViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         logging.debug(self)
         return Title.objects.all()
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthorOrReadOnly,)
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    pagination_class = LimitOffsetPagination
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthorOrReadOnly,)
+    serializer_class = CommentSerializer
+
+    def perform_create(self, serializer):
+        review_id = self.kwargs.get("review_id")
+        review = get_object_or_404(Review, id=review_id)
+        serializer.save(author=self.request.user, review=review)
+
+    def get_queryset(self):
+        review_id = self.kwargs.get("review_id")
+        review = get_object_or_404(Review, id=review_id)
+        new_queryset = Comment.objects.filter(review=review)
+        return new_queryset
