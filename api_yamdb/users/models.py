@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
 class User(AbstractUser):
     ADMIN = 'admin'
     MODERATOR = 'moderator'
@@ -32,11 +33,12 @@ class User(AbstractUser):
         verbose_name='Биография',
         null=True,
         blank=True,
-)
+    )
+
 
 class ConfCode(models.Model):
     confirmation_code = models.CharField(verbose_name='Код подтверждения',
-                             max_length=10)
+                                         max_length=10)
     username = models.ForeignKey(
         User,
         verbose_name='Имя пользователя',
