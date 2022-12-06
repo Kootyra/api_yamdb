@@ -1,11 +1,16 @@
 from django.core.mail import send_mail
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework import status, viewsets, permissions
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import User, ConfCode
 from .serializers import (UserRegistrationSerializer,
                           UserConfirmationSerializer,
-                          UserProfileSerializer)
+                          UserProfileSerializer,
+                          NewUserAdmin
+                          )
+from .permissions import (Admin
+                          )
 from django.shortcuts import get_object_or_404
 import secrets
 import string
@@ -48,13 +53,11 @@ class UserConfirmation(viewsets.ViewSet):
 
     def confirmation(self, request):
         serializer = UserConfirmationSerializer(data=request.data)
+        user_form = serializer.initial_data.get('username')
+        user_base = get_object_or_404(User, username=user_form)
         if not serializer.is_valid():
-            print(serializer.errors)
             return Response(serializer.errors,
                             status=status.HTTP_400_BAD_REQUEST)
-        print(serializer.data)
-        user_form = serializer.data.get('username')
-        user_base = get_object_or_404(User, username=user_form)
         code_base = get_object_or_404(ConfCode, username=user_base)
         code_form = serializer.data.get('confirmation_code')
         if code_base.confirmation_code != code_form:
@@ -65,15 +68,33 @@ class UserConfirmation(viewsets.ViewSet):
 
 
 class UserProfile(viewsets.ModelViewSet):
+    lookup_field = "username"
+    queryset = User.objects.all()
+    serializer_class = NewUserAdmin
+    permission_classes = (Admin,)
 
+    @action(
+        methods=[
+            "get",
+            "patch",
+        ],
+        detail=False,
+        url_path="me",
+        permission_classes=(permissions.IsAuthenticated,),
+        serializer_class=UserProfileSerializer,
+    )
     def profile(self, request):
         user = request.user
-        serializer = UserProfileSerializer(
-            user,
-            data=request.data
-        )
-        if not serializer.is_valid():
-            return Response(serializer.errors,
-                            status=status.HTTP_400_BAD_REQUEST)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if request.method == "GET":
+            serializer = self.get_serializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        if request.method == "PATCH":
+            serializer = self.get_serializer(
+                user,
+                data=request.data,
+                partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
