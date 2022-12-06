@@ -1,7 +1,12 @@
-from django.urls import path
+from django.urls import include, path
 from . import views
+from rest_framework import routers
+
 
 app_name = 'users'
+
+router = routers.DefaultRouter()
+router.register(r'users', views.UserProfile, basename='users')
 
 urlpatterns = [
     path('auth/signup/',
@@ -9,7 +14,6 @@ urlpatterns = [
          name='signup'),
     path('auth/token/',
          views.UserConfirmation.as_view({'post': 'confirmation'}),
-         name='token_obtain_pair'),
-    path('users/me/',
-         views.UserProfile.as_view({'patch': 'profile'})),
+         name='token'),
+    path('', include(router.urls))
 ]
