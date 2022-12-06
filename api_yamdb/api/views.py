@@ -2,7 +2,7 @@ import logging
 
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import LimitOffsetPagination
-# from django_filters import rest_framework as djfilters
+from django_filters import rest_framework as djfilters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.exceptions import MethodNotAllowed
@@ -61,28 +61,22 @@ class GenreViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# class TitleFilter(djfilters.FilterSet):
-#     genre = djfilters.CharFilter()
-#     category = djfilters.CharFilter()
-#
-#     class Meta:
-#         model = Title
-#         fields = ['name',
-#                   'year',]
+class TitleFilter(djfilters.FilterSet):
+    name = djfilters.CharFilter(field_name='name', lookup_expr='contains')
+    genre = djfilters.CharFilter(field_name='genre', lookup_expr='slug')
+    category = djfilters.CharFilter(field_name='category', lookup_expr='slug')
+
+    class Meta:
+        model = Title
+        fields = ['category', 'genre', 'name', 'year']
+
 
 class TitleViewSet(viewsets.ModelViewSet):
-    serializer_class = TitleGetSerializer
     permission_classes = [IsAdminOrReadOnly]
-    filter_backends = [DjangoFilterBackend]
-    # filterset_class = TitleFilter
-    # ordering_fields = ['name',
-    #                    'year',
-    #                    'genre',
-    #                    'category']
-    filterset_fields = ['name',
-                        'year',
-                        'genre',
-                        'category',]
+    filter_backends = [DjangoFilterBackend,
+                       filters.OrderingFilter]
+    filterset_class = TitleFilter
+    ordering = ['-id']
 
 
     def get_serializer_class(self):
@@ -91,7 +85,6 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitlePostSerializer
 
     def get_queryset(self):
-        logging.debug(self)
         return Title.objects.all()
 
 
