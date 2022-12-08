@@ -41,24 +41,17 @@ class TitleGetSerializer(serializers.ModelSerializer):
                   'category']
 
 
-class GenreTitleField(serializers.Field):
-    def get_attribute(self, instance):
-        return instance
-
-    def to_representation(self, value):
-        return value.genre.values('name', 'slug')
-
-    def to_internal_value(self, data):
-        return Genre.objects.filter(slug__regex='|'.join(data))
-
-
 class TitlePostSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(),
         slug_field='slug',
         required=True)
 
-    genre = GenreTitleField()
+    genre = serializers.SlugRelatedField(
+        many=True,
+        queryset=Genre.objects.all(),
+        slug_field='slug')
+
 
     class Meta:
         model = Title

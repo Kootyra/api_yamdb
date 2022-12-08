@@ -15,6 +15,10 @@ class Category(models.Model):
 class Genre(models.Model):
     name = models.CharField(max_length=256, unique=True)
     slug = models.SlugField(max_length=50, unique=True)
+    title = models.ManyToManyField(
+        'Title',
+        through='GenreTitle',
+        related_name='genre',)
 
     def __str__(self):
         return self.name
@@ -28,12 +32,14 @@ class Title(models.Model):
         'Category',
         on_delete=models.PROTECT,
         related_name='title')
-    genre = models.ManyToManyField(
-        'Genre',
-        related_name='title')
 
     def __str__(self):
         return self.name
+
+
+class GenreTitle(models.Model):
+    title = models.ForeignKey('Title', on_delete=models.CASCADE)
+    genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
 
 
 class Review(models.Model):
