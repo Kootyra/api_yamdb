@@ -1,17 +1,18 @@
 import logging
 
 from django.shortcuts import get_object_or_404
-from rest_framework.pagination import LimitOffsetPagination
+
 from django_filters import rest_framework as djfilters
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Avg
 from rest_framework import filters, status, viewsets
 from rest_framework.exceptions import MethodNotAllowed
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
 from reviews.models import Category, Genre, Title, Review, Comment
 
-from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
+from .permissions import (IsAdminOrReadOnly, IsAuthorModerAdminOrReadOnly,)
 from .serializers import (CategorySerializer, GenreSerializer,
                           TitleGetSerializer, TitlePostSerializer,
                           ReviewSerializer, CommentSerializer)
@@ -23,6 +24,7 @@ logging.basicConfig(
     filemode='w',
 )
 
+
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -30,9 +32,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
 
     def get_queryset(self):
-        if (len(self.kwargs) != 0 and
-            (self.request.method == 'GET' or
-            self.request.method == 'PATCH')):
+        if (len(self.kwargs) != 0
+            and (self.request.method == 'GET'
+                 or self.request.method == 'PATCH')):
             raise MethodNotAllowed(self.request.method)
         return Category.objects.all()
 
@@ -49,10 +51,10 @@ class GenreViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
 
     def get_queryset(self):
-        if (len(self.kwargs) != 0 and
-            (self.request.method == 'GET' or
-            self.request.method == 'PATCH')):
-                raise MethodNotAllowed(self.request.method)
+        if (len(self.kwargs) != 0
+            and (self.request.method == 'GET'
+                 or self.request.method == 'PATCH')):
+            raise MethodNotAllowed(self.request.method)
         return Genre.objects.all()
 
     def destroy(self, request, **kwargs):
@@ -78,29 +80,34 @@ class TitleViewSet(viewsets.ModelViewSet):
     filterset_class = TitleFilter
     ordering = ['-id']
 
-
     def get_serializer_class(self):
         if self.request.method == 'GET':
             return TitleGetSerializer
         return TitlePostSerializer
 
     def get_queryset(self):
-        return Title.objects.all()
+        return Title.objects.all().annotate(Avg('reviews__score'))
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAuthorOrReadOnly,)
-    queryset = Review.objects.all()
+    permission_classes = (IsAuthorModerAdminOrReadOnly,)
     serializer_class = ReviewSerializer
-    pagination_class = LimitOffsetPagination
+    queryset = Review.objects.all()
+
+    def get_queryset(self):
+        title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        return title.reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
+        serializer.save(author=self.request.user, title=title)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAuthorOrReadOnly,)
+    permission_classes = (IsAuthorModerAdminOrReadOnly,)
     serializer_class = CommentSerializer
+    queryset = Comment.objects.all()
+    pagination_class = LimitOffsetPagination
 
     def perform_create(self, serializer):
         review_id = self.kwargs.get("review_id")

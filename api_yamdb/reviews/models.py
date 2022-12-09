@@ -38,12 +38,15 @@ class Title(models.Model):
 
 class Review(models.Model):
     title = models.ForeignKey(
-        Title, on_delete=models.CASCADE, related_name='review')
+        Title, on_delete=models.CASCADE, related_name='reviews')
     text = models.TextField()
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='review')
+        User, on_delete=models.CASCADE, related_name='reviews')
     score = models.IntegerField()
+
+    class Meta:
+        unique_together = ('author', 'title')
 
     def __str__(self):
         return self.text
@@ -55,5 +58,5 @@ class Comment(models.Model):
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments')
     text = models.TextField()
-    created = models.DateTimeField(
+    pub_date = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
