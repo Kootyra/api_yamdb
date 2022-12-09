@@ -27,31 +27,31 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ['name', 'slug']
 
 
-class GenreTitleField(serializers.Field):
-    def get_attribute(self, instance):
-        return instance
-
-    def to_representation(self, value):
-        # logging.debug(value.genre.values('name', 'slug'))
-        return value.genre.values('name', 'slug')
-
-    def to_internal_value(self, data):
-        genres = ''.join(re.findall('[^\[^\]^\'^\"^\s]', data))
-        genres_list = re.split(',', genres)
-        genres_query = []
-        for genre in genres_list:
-            try:
-                genres_query.append(Genre.objects.get(slug=genre))
-            except:
-                raise serializers.ValidationError(
-                    f'Жанра {genre} не существует.')
-        # logging.debug(genres_query)
-        return genres_query
-
-
 class TitleGetSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
-    genre = GenreTitleField()
+    genre = GenreSerializer(many=True)
+
+    class Meta:
+        model = Title
+        fields = ['id',
+                  'name',
+                  'year',
+                  'description',
+                  'genre',
+                  'category']
+
+
+class TitlePostSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(),
+        slug_field='slug',
+        required=True)
+
+    genre = serializers.SlugRelatedField(
+        many=True,
+        queryset=Genre.objects.all(),
+        slug_field='slug')
+
 
     class Meta:
         model = Title
