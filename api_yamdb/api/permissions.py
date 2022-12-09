@@ -45,5 +45,5 @@ class IsAdminOrReadOnly(permissions.IsAdminUser):
         if request.user.is_staff:
             return True
 
-        return bool(hasattr(request.user, 'role') and
-                    request.user.role == 'admin')
+        return bool(hasattr(request.user, 'role')
+                    and request.user.role == 'admin')

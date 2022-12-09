@@ -22,9 +22,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
 
     def get_queryset(self):
-        if (len(self.kwargs) != 0 and
-            (self.request.method == 'GET' or
-             self.request.method == 'PATCH')):
+        if len(self.kwargs) != 0 and self.request.method in ['GET', 'PATCH']:
             raise MethodNotAllowed(self.request.method)
         return Category.objects.all()
 
@@ -41,9 +39,7 @@ class GenreViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
 
     def get_queryset(self):
-        if (len(self.kwargs) != 0 and
-            (self.request.method == 'GET' or
-             self.request.method == 'PATCH')):
+        if len(self.kwargs) != 0 and self.request.method in ['GET', 'PATCH']:
             raise MethodNotAllowed(self.request.method)
         return Genre.objects.all()
 
