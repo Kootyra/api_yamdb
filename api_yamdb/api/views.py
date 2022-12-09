@@ -5,7 +5,6 @@ from django.shortcuts import get_object_or_404
 from django_filters import rest_framework as djfilters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets, permissions
-from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.decorators import action
