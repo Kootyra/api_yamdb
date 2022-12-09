@@ -3,31 +3,44 @@ from django.db import models
 
 
 class User(AbstractUser):
+    ADMIN = 'admin'
+    MODERATOR = 'moderator'
+    USER = 'user'
     ROLES = [
-        ('user', 'user'),
-        ('moderator', 'moderator'),
-        ('admin', 'admin'),
+        (ADMIN, 'Administrator'),
+        (MODERATOR, 'Moderator'),
+        (USER, 'User'),
     ]
 
+    email = models.EmailField(
+        verbose_name='E-mail',
+        max_length=254,
+        unique=True,
+    )
     username = models.CharField(
-        blank=False,
+        verbose_name='Логин',
+        max_length=150,
         null=False,
-        max_length=250,
         unique=True
     )
-    email = models.EmailField(
-        blank=False,
-        null=False,
-        max_length=254,
-        unique=True)
-
     role = models.CharField(
-        max_length=10,
+        verbose_name='Роль',
+        max_length=50,
         choices=ROLES,
-        default='user',
+        default=USER
+    )
+    bio = models.TextField(
+        verbose_name='Биография',
+        null=True,
+        blank=True,
     )
 
-    bio = models.TextField(blank=True)
 
-    def __str__(self):
-        return self.username
+class ConfCode(models.Model):
+    confirmation_code = models.CharField(verbose_name='Код подтверждения',
+                                         max_length=10)
+    username = models.ForeignKey(
+        User,
+        verbose_name='Имя пользователя',
+        on_delete=models.CASCADE,
+    )
