@@ -11,10 +11,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class UserConfirmationSerializer(serializers.ModelSerializer):
-    username = serializers.SlugRelatedField(
-        queryset=User.objects.all(),
-        slug_field='username',
-    )
+    username = serializers.CharField()
 
     class Meta:
         model = ConfCode

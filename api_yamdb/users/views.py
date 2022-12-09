@@ -53,11 +53,11 @@ class UserConfirmation(viewsets.ViewSet):
 
     def confirmation(self, request):
         serializer = UserConfirmationSerializer(data=request.data)
-        user_form = serializer.initial_data.get('username')
-        user_base = get_object_or_404(User, username=user_form)
         if not serializer.is_valid():
             return Response(serializer.errors,
                             status=status.HTTP_400_BAD_REQUEST)
+        user_form = serializer.initial_data.get('username')
+        user_base = get_object_or_404(User, username=user_form)
         code_base = get_object_or_404(ConfCode, username=user_base)
         code_form = serializer.data.get('confirmation_code')
         if code_base.confirmation_code != code_form:
