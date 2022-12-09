@@ -1,7 +1,4 @@
-from django.contrib.auth import get_user_model
 from django.db import models
-
-User = get_user_model()
 
 
 class Category(models.Model):
@@ -36,7 +33,6 @@ class Title(models.Model):
     def __str__(self):
         return self.name
 
-
 class GenreTitle(models.Model):
     title = models.ForeignKey('Title', on_delete=models.CASCADE)
     genre = models.ForeignKey('Genre', on_delete=models.CASCADE)
@@ -63,3 +59,4 @@ class Comment(models.Model):
     text = models.TextField()
     created = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
+

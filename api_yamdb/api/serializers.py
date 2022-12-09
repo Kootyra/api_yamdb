@@ -4,7 +4,7 @@ import re
 from django.shortcuts import get_object_or_404
 from rest_framework import exceptions, serializers
 
-from reviews.models import Category, Genre, Title, Review, Comment
+from reviews.models import Category, Genre, Title
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -58,21 +58,13 @@ class TitlePostSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(slug_field='username',
-                                          read_only=True)
-
-    class Meta:
-        fields = '__all__'
-        model = Review
+    # def to_representation(self, value):
+    #     logging.debug(self)
+    #     pass
 
 
-class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username'
-    )
-
-    class Meta:
-        fields = '__all__'
-        read_only_fields = ('author', 'review')
-        model = Comment
+class TitlePostSerializer(TitleGetSerializer):
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(),
+        slug_field='slug',
+        required=True)
