@@ -10,7 +10,9 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import AccessToken
-
+from rest_framework.mixins import (CreateModelMixin,
+                                   DestroyModelMixin,
+                                   ListModelMixin)
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
 from .permissions import Admin, IsAdminOrReadOnly, IsAuthorModerAdminOrReadOnly
@@ -21,16 +23,13 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           UserProfileSerializer, UserRegistrationSerializer)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(viewsets.GenericViewSet, CreateModelMixin,
+                      DestroyModelMixin, ListModelMixin):
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
-
-    def get_queryset(self):
-        if len(self.kwargs) != 0 and self.request.method in ['GET', 'PATCH']:
-            raise MethodNotAllowed(self.request.method)
-        return Category.objects.all()
 
     def destroy(self, request, **kwargs):
         instance = get_object_or_404(Category, slug=kwargs.get('pk'))
@@ -38,16 +37,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class GenreViewSet(viewsets.ModelViewSet):
+class GenreViewSet(viewsets.GenericViewSet, CreateModelMixin,
+                   DestroyModelMixin, ListModelMixin):
+    queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
-
-    def get_queryset(self):
-        if len(self.kwargs) != 0 and self.request.method in ['GET', 'PATCH']:
-            raise MethodNotAllowed(self.request.method)
-        return Genre.objects.all()
 
     def destroy(self, request, **kwargs):
         instance = get_object_or_404(Genre, slug=kwargs.get('pk'))
