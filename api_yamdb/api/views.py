@@ -6,9 +6,6 @@ from rest_framework import filters, status, viewsets
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
-from rest_framework.mixins import (CreateModelMixin,
-                                   DestroyModelMixin,
-                                   ListModelMixin)
 
 from reviews.models import Category, Comment, Genre, Review, Title
 
@@ -18,13 +15,16 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           TitleGetSerializer, TitlePostSerializer)
 
 
-class CategoryViewSet(viewsets.GenericViewSet, CreateModelMixin,
-                      DestroyModelMixin, ListModelMixin):
-    queryset = Category.objects.all()
+class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
+
+    def get_queryset(self):
+        if len(self.kwargs) != 0 and self.request.method in ['GET', 'PATCH']:
+            raise MethodNotAllowed(self.request.method)
+        return Category.objects.all()
 
     def destroy(self, request, **kwargs):
         instance = get_object_or_404(Category, slug=kwargs.get('pk'))
@@ -32,13 +32,16 @@ class CategoryViewSet(viewsets.GenericViewSet, CreateModelMixin,
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class GenreViewSet(viewsets.GenericViewSet, CreateModelMixin,
-                   DestroyModelMixin, ListModelMixin):
-    queryset = Genre.objects.all()
+class GenreViewSet(viewsets.ModelViewSet):
     serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
+
+    def get_queryset(self):
+        if len(self.kwargs) != 0 and self.request.method in ['GET', 'PATCH']:
+            raise MethodNotAllowed(self.request.method)
+        return Genre.objects.all()
 
     def destroy(self, request, **kwargs):
         instance = get_object_or_404(Genre, slug=kwargs.get('pk'))
@@ -75,6 +78,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorModerAdminOrReadOnly,)
     serializer_class = ReviewSerializer
+    queryset = Review.objects.all()
 
     def get_queryset(self):
         title = get_object_or_404(Title, id=self.kwargs.get('title_id'))
@@ -88,6 +92,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthorModerAdminOrReadOnly,)
     serializer_class = CommentSerializer
+    queryset = Comment.objects.all()
     pagination_class = LimitOffsetPagination
 
     def perform_create(self, serializer):
