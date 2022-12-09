@@ -8,6 +8,7 @@ router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'genres', GenreViewSet, basename='genre')
 router.register(r'titles', TitleViewSet, basename='title')
 
+
 urlpatterns = [
     path('', include(router.urls))
 ]
