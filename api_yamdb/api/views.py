@@ -1,18 +1,24 @@
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters import rest_framework as djfilters
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, status, viewsets, permissions
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework_simplejwt.tokens import AccessToken
 
 from reviews.models import Category, Comment, Genre, Review, Title
-
-from .permissions import IsAdminOrReadOnly, IsAuthorModerAdminOrReadOnly
+from users.models import User
+from .permissions import Admin, IsAdminOrReadOnly, IsAuthorModerAdminOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, ReviewSerializer,
-                          TitleGetSerializer, TitlePostSerializer)
+                          TitleGetSerializer, TitlePostSerializer,
+                          NewUserAdmin, UserConfirmationSerializer,
+                          UserProfileSerializer, UserRegistrationSerializer)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -104,3 +110,78 @@ class CommentViewSet(viewsets.ModelViewSet):
         review_id = self.kwargs.get("review_id")
         review = get_object_or_404(Review, id=review_id)
         return Comment.objects.filter(review=review)
+
+
+class UserRegistration(viewsets.ViewSet):
+    permission_classes = (permissions.AllowAny,)
+
+    def signup(self, request):
+        serializer = UserRegistrationSerializer(data=request.data)
+        if (not serializer.is_valid()
+                or serializer.initial_data['username'] == 'me'):
+            return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        user = get_object_or_404(User,
+                                 username=serializer.validated_data["username"]
+                                 )
+        confirmation_code = default_token_generator.make_token(user)
+        send_mail(
+            'Registration code',
+            f'Для получения токена введите код {confirmation_code}',
+            'from@example.com',
+            [serializer.data.get('email')],
+            fail_silently=False,
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserConfirmation(viewsets.ViewSet):
+    permission_classes = (permissions.AllowAny,)
+
+    def confirmation(self, request):
+        serializer = UserConfirmationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
+        user_form = serializer.initial_data.get('username')
+        user = get_object_or_404(User, username=user_form)
+        if default_token_generator.check_token(
+            user, serializer.validated_data["confirmation_code"]
+        ):
+            token = AccessToken.for_user(user)
+            return Response({"token": str(token)}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserProfile(viewsets.ModelViewSet):
+    lookup_field = "username"
+    queryset = User.objects.all()
+    serializer_class = NewUserAdmin
+    permission_classes = (Admin,)
+
+    @action(
+        methods=[
+            "get",
+            "patch",
+        ],
+        detail=False,
+        url_path="me",
+        permission_classes=(permissions.IsAuthenticated,),
+        serializer_class=UserProfileSerializer,
+    )
+    def profile(self, request):
+        user = request.user
+        if request.method == "GET":
+            serializer = self.get_serializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        if request.method == "PATCH":
+            serializer = self.get_serializer(
+                user,
+                data=request.data,
+                partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

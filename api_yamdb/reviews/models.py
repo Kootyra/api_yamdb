@@ -3,18 +3,28 @@ from django.db import models
 
 User = get_user_model()
 
+CHARS_IN_RETURN = 100
+
 
 class Category(models.Model):
-    name = models.CharField(max_length=256, unique=True)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(verbose_name='Название группы ',
+                            max_length=256,
+                            unique=True)
+    slug = models.SlugField(verbose_name='Адрес для ссылки',
+                            max_length=50,
+                            unique=True)
 
     def __str__(self):
         return self.name
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=256, unique=True)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(verbose_name='Название жанра',
+                            max_length=256,
+                            unique=True)
+    slug = models.SlugField(verbose_name='Адрес для ссылки',
+                            max_length=50,
+                            unique=True)
     title = models.ManyToManyField(
         'Title',
         through='GenreTitle',
@@ -25,9 +35,9 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
-    name = models.CharField(max_length=256)
-    year = models.IntegerField()
-    description = models.TextField(blank=True)
+    name = models.CharField(verbose_name='Название', max_length=256)
+    year = models.IntegerField(verbose_name='Год',)
+    description = models.TextField(verbose_name='Описание', blank=True)
     category = models.ForeignKey(
         'Category',
         on_delete=models.PROTECT,
@@ -55,7 +65,7 @@ class Review(models.Model):
         unique_together = ('author', 'title')
 
     def __str__(self):
-        return self.text
+        return self.text[:CHARS_IN_RETURN]
 
 
 class Comment(models.Model):
