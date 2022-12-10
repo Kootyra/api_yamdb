@@ -4,22 +4,22 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters import rest_framework as djfilters
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets, permissions
+from rest_framework import filters, permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.mixins import (CreateModelMixin, DestroyModelMixin,
+                                   ListModelMixin)
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
-from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework.mixins import (CreateModelMixin,
-                                   DestroyModelMixin,
-                                   ListModelMixin)
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
+
 from .permissions import Admin, IsAdminOrReadOnly, IsAuthorModerAdminOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, ReviewSerializer,
+                          GenreSerializer, NewUserAdmin, ReviewSerializer,
                           TitleGetSerializer, TitlePostSerializer,
-                          NewUserAdmin, UserConfirmationSerializer,
-                          UserProfileSerializer, UserRegistrationSerializer)
+                          UserConfirmationSerializer, UserProfileSerializer,
+                          UserRegistrationSerializer)
 
 
 class CategoryViewSet(viewsets.GenericViewSet, CreateModelMixin,
@@ -29,11 +29,7 @@ class CategoryViewSet(viewsets.GenericViewSet, CreateModelMixin,
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
-
-    def destroy(self, request, **kwargs):
-        instance = get_object_or_404(Category, slug=kwargs.get('pk'))
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    lookup_field = 'slug'
 
 
 class GenreViewSet(viewsets.GenericViewSet, CreateModelMixin,
@@ -43,11 +39,7 @@ class GenreViewSet(viewsets.GenericViewSet, CreateModelMixin,
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
-
-    def destroy(self, request, **kwargs):
-        instance = get_object_or_404(Genre, slug=kwargs.get('pk'))
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    lookup_field = 'slug'
 
 
 class TitleFilter(djfilters.FilterSet):
