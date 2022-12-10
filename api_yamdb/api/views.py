@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
-
+from .const import EMAIL_SENDER
 from .permissions import Admin, IsAdminOrReadOnly, IsAuthorModerAdminOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, NewUserAdmin, ReviewSerializer,
@@ -104,10 +104,7 @@ class UserRegistration(viewsets.ViewSet):
 
     def signup(self, request):
         serializer = UserRegistrationSerializer(data=request.data)
-        if (not serializer.is_valid()
-                or serializer.initial_data['username'] == 'me'):
-            return Response(serializer.errors,
-                            status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
         serializer.save()
         user = get_object_or_404(User,
                                  username=serializer.validated_data["username"]
@@ -116,7 +113,7 @@ class UserRegistration(viewsets.ViewSet):
         send_mail(
             'Registration code',
             f'Для получения токена введите код {confirmation_code}',
-            'from@example.com',
+            f'{EMAIL_SENDER}',
             [serializer.data.get('email')],
             fail_silently=False,
         )
@@ -128,9 +125,7 @@ class UserConfirmation(viewsets.ViewSet):
 
     def confirmation(self, request):
         serializer = UserConfirmationSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors,
-                            status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
         user_form = serializer.initial_data.get('username')
         user = get_object_or_404(User, username=user_form)
         if default_token_generator.check_token(
@@ -171,4 +166,3 @@ class UserProfile(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

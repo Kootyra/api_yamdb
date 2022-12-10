@@ -81,10 +81,16 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    username = serializers.CharField
+
+    def validate_username(self, value):
+        if value.lower() == "me":
+            raise serializers.ValidationError("Username 'me' is not valid")
+        return value
 
     class Meta:
+        fields = ("username", "email")
         model = User
-        fields = ('username', 'email')
 
 
 class UserConfirmationSerializer(serializers.Serializer):
