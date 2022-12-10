@@ -1,9 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from api.const import CHARS_IN_RETURN
 
 User = get_user_model()
-
-CHARS_IN_RETURN = 100
 
 
 class Category(models.Model):
