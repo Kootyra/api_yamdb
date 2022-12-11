@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
-from .const import EMAIL_SENDER
+from api_yamdb.settings import EMAIL_SENDER
 from .permissions import Admin, IsAdminOrReadOnly, IsAuthorModerAdminOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, NewUserAdmin, ReviewSerializer,

@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-from api.const import CHARS_IN_RETURN
+from api_yamdb.settings import CHARS_IN_RETURN
 
 User = get_user_model()
 
