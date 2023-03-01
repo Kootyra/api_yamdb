@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ConfCode, User
+from .models import User, ConfCode
 
 admin.site.register(User)
 

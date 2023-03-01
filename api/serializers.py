@@ -1,8 +1,17 @@
-from django.shortcuts import get_object_or_404
-from rest_framework import serializers
-from reviews.models import Category, Comment, Genre, Review, Title
-from users.models import User
+import logging
+import re
 
+from django.shortcuts import get_object_or_404
+from rest_framework import exceptions, serializers
+
+from reviews.models import Category, Genre, Title, Review, Comment
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s, %(levelname)s, %(message)s, %(name)s',
+    filename='mylog.log',
+    filemode='w'
+)
 
 class CategorySerializer(serializers.ModelSerializer):
 
@@ -21,13 +30,26 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleGetSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     genre = GenreSerializer(many=True)
-    rating = serializers.IntegerField(
-        source='reviews__score__avg', read_only=True
-    )
 
     class Meta:
         model = Title
-        fields = '__all__'
+        fields = ['id',
+                  'name',
+                  'year',
+                  'description',
+                  'genre',
+                  'category']
+
+
+class GenreTitleField(serializers.Field):
+    def get_attribute(self, instance):
+        return instance
+
+    def to_representation(self, value):
+        return value.genre.values('name', 'slug')
+
+    def to_internal_value(self, data):
+        return Genre.objects.filter(slug__regex='|'.join(data))
 
 
 class TitlePostSerializer(serializers.ModelSerializer):
@@ -36,10 +58,7 @@ class TitlePostSerializer(serializers.ModelSerializer):
         slug_field='slug',
         required=True)
 
-    genre = serializers.SlugRelatedField(
-        many=True,
-        queryset=Genre.objects.all(),
-        slug_field='slug')
+    genre = GenreTitleField()
 
     class Meta:
         model = Title
@@ -47,26 +66,12 @@ class TitlePostSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        read_only=True,
-        slug_field='username',
-        default=serializers.CurrentUserDefault())
+    author = serializers.SlugRelatedField(slug_field='username',
+                                          read_only=True)
 
     class Meta:
         fields = '__all__'
         model = Review
-        read_only_fields = ('title', 'author')
-
-    def validate(self, data):
-        request = self.context['request']
-        title = get_object_or_404(
-            Title, id=self.context.get('view').kwargs.get('title_id')
-        )
-        author = request.user
-        if request.method == 'POST' and Review.objects.filter(
-                author=author, title=title).exists():
-            raise serializers.ValidationError('you already have posted review')
-        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -78,38 +83,3 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('author', 'review')
         model = Comment
-
-
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    username = serializers.CharField
-
-    def validate_username(self, value):
-        if value.lower() == "me":
-            raise serializers.ValidationError("Username 'me' is not valid")
-        return value
-
-    class Meta:
-        fields = ("username", "email")
-        model = User
-
-
-class UserConfirmationSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    confirmation_code = serializers.CharField()
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'first_name',
-                  'last_name', 'bio', 'role',)
-        read_only_fields = ('role',)
-
-
-class NewUserAdmin(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'first_name',
-                  'last_name', 'bio', 'role',)
