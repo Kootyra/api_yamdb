@@ -4,7 +4,7 @@
 ## Как запустить проект:
 Клонировать репозиторий и перейти в него в командной строке:
 ```
-git clone git@github.com:{github_username}/api_yamdb.git
+git clone git@github.com:Kootyra/api_yamdb.git
 ```
 ```
 cd api_yamdb
